@@ -18,7 +18,7 @@ Aplicação **full‑stack** para gerenciamento de transações financeiras com 
 - **Docker Compose** pronto para PostgreSQL + Node.js.
 - **Variáveis de ambiente** (`.env.example` incluído):
   ```env
-  GOOGLE_API_KEY=AIzaSy...   # opcional – sobrescreve fallback
+  GOOGLE_API_KEY=...   # opcional – sobrescreve fallback
   DB_USER=postgres
   DB_PASSWORD=postgres
   DB_NAME=controle_financeiro
