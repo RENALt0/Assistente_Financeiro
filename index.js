@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import transacoesRoutes from './routes/transacoes.js';
 import dashboardRoutes from './routes/dashboard.js';
 import chatRoutes from './routes/chat.js';
+import aprioriRoutes from './routes/apriori.js';
 
 // Carrega variáveis de ambiente do arquivo .env, se existir
 dotenv.config();
@@ -18,7 +19,7 @@ app.use(express.static("Frontend")); // serve arquivos estáticos do frontend pe
 app.use(transacoesRoutes); // usa as rotas de transações definidas em routes/transacoes.js                  
 app.use(dashboardRoutes); // usa as rotas do dashboard definidas em routes/dashboard.js
 app.use(chatRoutes); // usa as rotas do chat definidas em routes/chat.js
-
+app.use(aprioriRoutes); //usa essa rota para aplicar toda a lógica Apriori
 
 const PORT = process.env.PORT || 3000;
 

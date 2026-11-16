@@ -13,4 +13,8 @@ const pool = new Pool({
   port: process.env.DB_PORT
 });
 
+pool.on('error', (err) => {
+  console.error('Erro inesperado no pool PostgreSQL:', err);
+});
+
 export default pool;

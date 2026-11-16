@@ -47,17 +47,17 @@ timeout /t 5 /nobreak > nul
 
 :: 5. Abre o navegador padrao na porta do projeto
 echo.
-echo [3/3] Abrindo a aplicacao no navegador em http://localhost:3000 ...
-start http://localhost:3000
+echo [3/3] Abrindo a aplicacao no navegador em http://localhost:3001 ...
+start http://localhost:3001
 
 echo.
 echo ====================================================================
 echo   PROJETO RODANDO COM SUCESSO!
 echo ====================================================================
 echo.
-echo   * O Frontend e o Backend estao ativos na porta 3000.
+echo   * O Frontend e o Backend estao ativos na porta 3001.
 echo   * O Banco de Dados PostgreSQL esta rodando em segundo plano.
-echo   * A Inteligencia Artificial (Gemini) esta ativa via fallback.
+echo   * Configure uma chave de API no arquivo .env para usar a Inteligencia Artificial.
 echo.
 echo   ================================================================
 echo   ATENCAO: Mantenha esta janela aberta enquanto estiver usando o app.

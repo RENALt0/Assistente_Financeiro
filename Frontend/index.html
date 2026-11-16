@@ -30,7 +30,19 @@
     <h2>Nova Transação</h2>
 
     <input type="text" id="descricao" placeholder="Descrição">
-    <input type="text" id="categoria" placeholder="Categoria">
+    <select id="categoria" required>
+      <option value="" disabled selected>Selecione uma categoria</option>
+      <option value="Alimentos">Alimentos</option>
+      <option value="Acessórios">Acessórios</option>
+      <option value="Eletrônicos">Eletrônicos</option>
+      <option value="Transporte">Transporte</option>
+      <option value="Saúde">Saúde</option>
+      <option value="Moradia">Moradia</option>
+      <option value="Lazer">Lazer</option>
+      <option value="Educação">Educação</option>
+      <option value="Mesada">Mesada</option>
+      <option value="Outros">Outros</option>
+    </select>
     <input type="number" id="valor" placeholder="Valor">
 
     <select id="tipo">
@@ -69,6 +81,48 @@
 
     <!-- LISTA -->
   <section>
+    <!-- ANÁLISE APRIORI -->
+  <section class="apriori-section">
+    <h2>Análise Inteligente de Despesas</h2>
+
+    <p>
+      Identifique associações entre categorias de despesas
+      registradas nos mesmos meses utilizando o algoritmo Apriori.
+    </p>
+
+    <button type="button" onclick="analisarApriori()">
+      Analisar despesas
+    </button>
+
+    <div id="aprioriStatus" aria-live="polite"></div>
+
+    <div id="aprioriResultado" hidden>
+      <h3>Resumo da análise</h3>
+      <p id="aprioriTotalMeses"></p>
+
+      <h3>Categorias analisadas</h3>
+      <p id="aprioriCategorias"></p>
+
+      <h3>Regras de associação</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Antecedente</th>
+              <th>Consequente</th>
+              <th>Suporte</th>
+              <th>Confiança</th>
+              <th>Lift</th>
+            </tr>
+          </thead>
+          <tbody id="aprioriRegras"></tbody>
+        </table>
+      </div>
+
+      <h3>Interpretação da inteligência artificial</h3>
+      <div id="aprioriInterpretacao"></div>
+    </div>
+  </section>
     <h2>Transações</h2>
     <div class="table-wrapper">
       <table>
