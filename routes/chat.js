@@ -276,11 +276,11 @@ Responda em português brasileiro, de forma clara, amigável e objetiva.
 
 DADOS FINANCEIROS DO SISTEMA:
 
-${JSON.stringify(dadosFinanceiros, null, 2)}
+${JSON.stringify(dadosFinanceiros)}
 
 REGRAS IMPORTANTES:
 
-1. Os valores apresentados são resultados reais das consultas ao banco de dados.
+1. Os valores apresentados correspondem aos registros retornados pelas consultas ao banco de dados.
 2. Utilize esses dados quando a pergunta envolver as finanças registradas pelo usuário.
 3. Nunca invente valores, saldos, percentuais, despesas ou categorias.
 4. Se uma informação não estiver disponível, informe isso claramente.
@@ -558,6 +558,14 @@ router.post("/analise/apriori/interpretar", async (req, res) => {
       rules: regrasDetalhadas
     };
 
+    const dadosParaIA = {
+      totalMeses,
+      parametrosApriori: dadosAnalise.parametrosApriori,
+      categoriasAnalisadas: dadosAnalise.categoriasAnalisadas,
+      frequenciaCategorias,
+      regras: regrasDetalhadas
+    };
+
     // =========================================
     // 8. PREPARA O PROMPT
     // =========================================
@@ -683,7 +691,7 @@ RECOMENDAÇÕES FINANCEIRAS:
 
 DADOS CALCULADOS PELO SISTEMA:
 
-${JSON.stringify(dadosAnalise, null, 2)}
+${JSON.stringify(dadosParaIA)}
 
 ORGANIZAÇÃO DA RESPOSTA:
 
@@ -757,10 +765,11 @@ nem produza recomendações sem evidências suficientes.
         }
 
       } catch (erroGroq) {
-        console.error(
-          "Groq falhou na interpretação do Apriori:",
-          erroGroq.status || erroGroq.message
-        );
+        console.error("Groq falhou na interpretação do Apriori:", {
+          status: erroGroq.status,
+          message: erroGroq.message,
+          details: erroGroq.error?.message
+        });
       }
     }
 
@@ -784,10 +793,11 @@ nem produza recomendações sem evidências suficientes.
         }
 
       } catch (erroGemini) {
-        console.error(
-          "Gemini falhou na interpretação do Apriori:",
-          erroGemini.status || erroGemini.message
-        );
+        console.error("Gemini falhou na interpretação do Apriori:", {
+          status: erroGemini.status,
+          message: erroGemini.message,
+          details: erroGemini.error?.message
+        });
       }
     }
 
