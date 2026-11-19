@@ -59,7 +59,7 @@ body {
 
 h1 {
   text-align: center;
-  color: var(--branco);
+  color: #fff;
   font-size: 2.4rem;
   font-weight: 750;
   margin: 15px 0 35px;
@@ -500,6 +500,53 @@ table button {
   line-height: 1.7;
 }
 
+#aprioriInterpretacao table {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+#aprioriInterpretacao th,
+#aprioriInterpretacao td {
+  min-width: 0;
+  padding: 8px 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th {
+  font-size: 0.75rem;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(1) {
+  width: 29%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(2) {
+  width: 10%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(3) {
+  width: 14%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(4) {
+  width: 8%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(5) {
+  width: 13%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(6) {
+  width: 13%;
+}
+
+#aprioriInterpretacao table:has(> thead > tr > th:nth-child(7)) th:nth-child(7) {
+  width: 13%;
+}
+
 #aprioriInterpretacao p {
   color: var(--texto);
   margin: 10px 0;
@@ -561,6 +608,12 @@ table button {
   td {
     padding: 11px 12px;
     font-size: 0.85rem;
+  }
+
+  #aprioriInterpretacao th,
+  #aprioriInterpretacao td {
+    padding: 6px 4px;
+    font-size: 0.78rem;
   }
 
   .apriori-section button {

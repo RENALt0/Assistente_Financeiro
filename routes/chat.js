@@ -276,11 +276,11 @@ Responda em português brasileiro, de forma clara, amigável e objetiva.
 
 DADOS FINANCEIROS DO SISTEMA:
 
-${JSON.stringify(dadosFinanceiros)}
+${JSON.stringify(dadosFinanceiros, null, 2)}
 
 REGRAS IMPORTANTES:
 
-1. Os valores apresentados correspondem aos registros retornados pelas consultas ao banco de dados.
+1. Os valores apresentados são resultados reais das consultas ao banco de dados.
 2. Utilize esses dados quando a pergunta envolver as finanças registradas pelo usuário.
 3. Nunca invente valores, saldos, percentuais, despesas ou categorias.
 4. Se uma informação não estiver disponível, informe isso claramente.
@@ -346,10 +346,13 @@ ${pergunta}
         }
 
       } catch (erroGroq) {
-        console.error(
-          "Groq falhou:",
-          erroGroq.status || erroGroq.message
-        );
+        console.error("\n===== ERRO COMPLETO GROQ - APRIORI =====");
+        console.error("Status:", erroGroq.status);
+        console.error("Mensagem:", erroGroq.message);
+        console.error("Resposta:", erroGroq.error);
+        console.error("Detalhes:", erroGroq.response?.data);
+        console.error("Nome:", erroGroq.name);
+        console.error("========================================\n");
       }
     }
 
@@ -559,11 +562,36 @@ router.post("/analise/apriori/interpretar", async (req, res) => {
     };
 
     const dadosParaIA = {
-      totalMeses,
+      totalMeses: dadosAnalise.totalMeses,
       parametrosApriori: dadosAnalise.parametrosApriori,
+      mesesAnalisados: dadosAnalise.mesesAnalisados.map(({ mes }) => mes),
       categoriasAnalisadas: dadosAnalise.categoriasAnalisadas,
-      frequenciaCategorias,
-      regras: regrasDetalhadas
+      frequenciaCategorias: dadosAnalise.frequenciaCategorias,
+      frequentItemsets: dadosAnalise.frequentItemsets.map(
+        ({ items, count, support }) => ({ items, count, support })
+      ),
+      rules: dadosAnalise.rules.map(
+        ({
+          antecedente,
+          consequente,
+          support,
+          confidence,
+          lift,
+          ocorrencias
+        }) => ({
+          antecedente,
+          consequente,
+          support,
+          confidence,
+          lift,
+          ocorrencias: {
+            antecedente: ocorrencias.antecedente,
+            consequente: ocorrencias.consequente,
+            conjunto: ocorrencias.conjunto,
+            totalMeses: ocorrencias.totalMeses
+          }
+        })
+      )
     };
 
     // =========================================
@@ -571,163 +599,111 @@ router.post("/analise/apriori/interpretar", async (req, res) => {
     // =========================================
 
     const prompt = `
+Você é um assistente especializado em análise financeira e mineração de dados.
+Interprete os resultados do Apriori de forma clara, didática e contextualizada,
+em português brasileiro.
 
-Você é um assistente especializado em análise financeira
-e mineração de dados.
+CONTEXTO
 
-Sua tarefa é interpretar os resultados calculados pelo
-algoritmo Apriori, explicando-os de maneira clara e didática.
+- As despesas são agrupadas por mês; cada mês é uma cesta de categorias.
+- Uma associação indica categorias que aparecem nos mesmos meses.
+- O Apriori não identifica compras individuais nem sequência de despesas.
+- Utilize exclusivamente os dados fornecidos. Não invente categorias,
+  valores, métricas, ocorrências, motivos ou tendências.
+- Ao explicar os resultados, não altere nem omita dados relevantes das
+  associações selecionadas. Não recalcule métricas ou contagens fornecidas.
+- Associação não comprova causalidade nem garante padrões futuros.
 
-CONTEXTO DO SISTEMA:
+ESTRUTURA DOS DADOS
 
-- O sistema registra despesas financeiras.
-- As despesas são agrupadas por mês.
-- Cada mês representa uma cesta de dados.
-- Cada categoria registrada naquele mês representa um item da cesta.
-- O Apriori identifica categorias que aparecem juntas nos mesmos meses.
-- O algoritmo não analisa compras individuais, produtos comprados juntos
-  ou a sequência das despesas.
+- Utilize dadosParaIA.totalMeses, dadosParaIA.parametrosApriori,
+  dadosParaIA.categoriasAnalisadas, dadosParaIA.frequenciaCategorias,
+  dadosParaIA.frequentItemsets e dadosParaIA.rules.
+- parametrosApriori contém suporteMinimo, confiancaMinima
+  e ocorrenciasMinimas. Use os valores fornecidos; não os substitua
+  por exemplos nem recalcule ocorrenciasMinimas.
+- frequenciaCategorias descreve cada categoria individualmente
+  por categoria, ocorrencias, totalMeses e meses.
+- frequentItemsets contém items, count e support.
+- Cada regra contém antecedente, consequente, support, confidence,
+  lift e ocorrencias.
+- Informe somente conjuntos frequentes e regras presentes nos dados.
+  Combinações ausentes não estão detalhadas; não afirme se nunca ocorreram
+  ou se apenas não atingiram os critérios configurados.
 
-REGRAS GERAIS:
+CONTAGENS DAS REGRAS
 
-- Utilize exclusivamente os dados fornecidos.
-- Não invente categorias, valores, associações ou ocorrências.
-- Não realize novos cálculos das métricas.
-- Não confunda associação com causalidade.
-- Não diga que o usuário comprou produtos juntos.
-- Utilize expressões como "categorias que aparecem no mesmo mês"
-  e "coocorrência mensal".
-- Responda em português brasileiro.
-- Seja claro, didático e objetivo.
-- Não apresente hipóteses como conclusões dos dados.
-- Não invente motivos para explicar a ocorrência conjunta.
-- Não faça afirmações sobre datas de pagamento, dias de consumo
-  ou motivos dos gastos.
+- ocorrencias.antecedente conta os meses que contêm todos os itens
+  do antecedente.
+- ocorrencias.consequente conta os meses que contêm todos os itens
+  do consequente, independentemente do antecedente.
+- ocorrencias.conjunto conta os meses em que antecedente e consequente
+  aparecem juntos.
+- ocorrencias.totalMeses é o total de meses analisados.
+- Use essas contagens para contextualizar as associações selecionadas,
+  sem recalcular suporte, confiança ou lift.
+- Não confunda a ocorrência do consequente isoladamente com sua ocorrência
+  junto ao antecedente.
 
-PARÂMETROS DO ALGORITMO:
+DATAS
 
-- Utilize os valores de dados.parametrosApriori.
-- O suporte mínimo e a confiança mínima foram configurados pelo sistema.
-- A quantidade mínima de ocorrências também foi calculada pelo sistema.
-- Não substitua esses valores por exemplos fixos.
-- Não recalcule a quantidade mínima de ocorrências.
-- Diferencie combinações que não atingiram o suporte mínimo
-  de combinações que nunca ocorreram.
+- O payload não contém listas de meses de ocorrência para cada regra.
+- Não identifique nem deduza os meses em que uma regra ocorreu em conjunto.
+- mesesAnalisados lista o período analisado; frequenciaCategorias.meses
+  registra meses de categorias individuais. Não use essas datas para inferir
+  meses de coocorrência de regras.
 
-PRECISÃO MATEMÁTICA:
+INTERPRETAÇÃO DAS MÉTRICAS
 
-- Os valores numéricos fornecidos pelo sistema são oficiais.
-- Nunca recalcule ou estime quantidades de meses.
-- Não substitua as quantidades fornecidas por outras frações.
-- Para explicar a confiança, utilize:
-  ocorrencias.antecedente e ocorrencias.conjunto.
-- Para explicar o suporte, utilize:
-  ocorrencias.conjunto e ocorrencias.totalMeses.
-- Para explicar a frequência individual de uma categoria,
-  utilize dados.frequenciaCategorias.
-- Não confunda a frequência individual de uma categoria
-  com a frequência da combinação entre categorias.
-- Não invente informações quando algum campo estiver ausente.
-- Utilize os valores de suporte, confiança e lift fornecidos
-  diretamente em cada regra.
+- Suporte: proporção dos meses analisados em que o conjunto da regra aparece.
+  Use o support fornecido; ocorrencias.conjunto e ocorrencias.totalMeses
+  contextualizam a contagem correspondente.
+- Confiança: proporção dos meses com o antecedente em que também aparece
+  o consequente. Use o confidence fornecido; ocorrencias.antecedente
+  e ocorrencias.conjunto contextualizam as contagens.
+- Lift: use o valor fornecido. Ele mede uma associação estatística em relação
+  às frequências individuais, não uma relação de causa e efeito. Maior que 1
+  indica associação positiva; igual a 1 indica ocorrência conjunta compatível
+  com o esperado pelas frequências individuais; menor que 1 indica associação
+  negativa.
+- Lift igual a 1 não representa associação positiva.
+- Não classifique uma associação como forte ou estatisticamente significativa
+  sem evidências adicionais.
+- Não confunda a frequência individual em frequenciaCategorias com
+  a ocorrência conjunta da regra.
 
-MESES DE OCORRÊNCIA:
+LIMITAÇÕES E CONCLUSÕES FINANCEIRAS
 
-- Os meses foram identificados diretamente pelo sistema.
-- Utilize ocorrencias.mesesConjunto para informar quando
-  as categorias de uma regra apareceram juntas.
-- Nunca deduza, estime ou altere os meses informados.
-- Não confunda os meses do antecedente com os meses
-  da combinação completa.
-- Se uma lista estiver vazia, informe que não houve ocorrência.
-- Apresente os meses no formato mês/ano, em português brasileiro.
-
-INTERPRETAÇÃO DAS MÉTRICAS:
-
-- Suporte: proporção de meses em que a combinação de categorias aparece.
-- Confiança: proporção dos meses que contêm o antecedente
-  em que também aparece o consequente.
-- Lift maior que 1: associação positiva em relação
-  à frequência individual das categorias.
-- Lift igual a 1: ocorrência conjunta compatível com
-  o esperado considerando as frequências individuais.
-- Lift menor que 1: associação negativa.
-- Não classifique uma associação como forte ou estatisticamente
-  significativa sem evidências adicionais.
-
-CUIDADOS NA ANÁLISE:
-
-- Suporte igual a 1 significa que a combinação apareceu
-  em todos os meses analisados.
-- Confiança igual a 1 significa que, em todos os meses
-  com o antecedente, o consequente também apareceu.
-- Confiança inferior a 1 não permite afirmar que o consequente
-  apareceu em todos os meses do antecedente.
-- Lift igual a 1 não indica associação positiva.
-- Quando houver poucos meses, destaque a limitação da amostra.
-- Se houver apenas um mês, não apresente os resultados
-  como padrões consistentes.
-- Não confunda quantidade de categorias com quantidade de meses.
-- Não apresente recomendações comerciais, como promoções cruzadas.
-
-RECOMENDAÇÕES FINANCEIRAS:
-
-- Diferencie observações históricas de previsões futuras.
-- Uma associação não comprova causalidade nem garante
-  que o padrão continuará acontecendo.
-- Não recomende aumentar, reduzir ou reservar valores
-  com base apenas na frequência de ocorrência.
-- Só faça recomendações envolvendo valores financeiros
-  quando os dados apresentarem informações suficientes
-  sobre os valores gastos.
-- Frequência de ocorrência não significa proporcionalidade
-  entre os valores gastos.
-- Não invente motivos para explicar as associações.
-- Quando os dados forem insuficientes para uma recomendação,
-  explique o que pode e o que não pode ser concluído.
-- Utilize expressões como "nos meses analisados",
-  "na amostra observada" e "os dados indicam".
-- Evite afirmações absolutas sobre o futuro.
+- Destaque limitações de amostras pequenas; se houver apenas um mês,
+  não apresente os resultados como padrões consistentes.
+- Diferencie observações históricas de previsões. Não afirme que os padrões
+  continuarão acontecendo.
+- Os dados do Apriori não incluem valores gastos. Não invente montantes
+  nem recomende aumentar, reduzir ou reservar valores com base somente
+  nas frequências.
+- Não invente causas ou motivos para as associações.
+- Apresente uma conclusão útil para o controle financeiro pessoal,
+  limitada ao que os resultados permitem observar.
 
 DADOS CALCULADOS PELO SISTEMA:
 
 ${JSON.stringify(dadosParaIA)}
 
-ORGANIZAÇÃO DA RESPOSTA:
+ORGANIZE A RESPOSTA EM CINCO SEÇÕES:
 
-1. RESUMO DA ANÁLISE
-
-Informe:
-- Quantos meses foram analisados.
-- Quais categorias apareceram.
-- A frequência individual das categorias, quando relevante.
-
-2. PRINCIPAIS ASSOCIAÇÕES
-
-- Apresente as regras encontradas, se existirem.
-- Explique que representam categorias presentes nos mesmos meses.
-- Informe os meses de ocorrência conjunta.
-- Não confunda a ocorrência individual com a ocorrência conjunta.
-
-3. INTERPRETAÇÃO DAS MÉTRICAS
-
-Explique suporte, confiança e lift utilizando os valores fornecidos.
-
-4. LIMITAÇÕES DOS DADOS
-
-Destaque:
-- A quantidade de meses analisados.
-- A variedade das categorias.
-- O efeito do suporte mínimo configurado.
-- As limitações de interpretar padrões com amostras pequenas.
-
-5. CONCLUSÃO PRÁTICA
-
-Apresente uma conclusão útil para o controle financeiro pessoal.
-Limite-se ao que pode ser observado nos dados.
-Não transforme associações em previsões de gastos
-nem produza recomendações sem evidências suficientes.
-
+1. RESUMO: total de meses, categorias analisadas e frequências individuais
+   relevantes.
+2. PRINCIPAIS ASSOCIAÇÕES: selecione e explique em texto conciso apenas as
+   associações mais relevantes presentes nos dados, destacando os padrões.
+   Não reproduza a tabela completa nem liste todas as regras. Para as
+   associações selecionadas, use fielmente as métricas e contagens relevantes,
+   sem citar meses específicos de ocorrência.
+3. MÉTRICAS: interpretação de suporte, confiança e lift com os valores
+   fornecidos.
+4. LIMITAÇÕES: tamanho da amostra, variedade das categorias e efeito
+   dos parâmetros configurados.
+5. CONCLUSÃO PRÁTICA: observações úteis, sem causalidade, previsões
+   ou recomendações não sustentadas pelos dados.
 `;
 
     // =========================================
@@ -736,11 +712,13 @@ nem produza recomendações sem evidências suficientes.
 
     let interpretacao = "";
     let iaDisponivel = false;
+    let respostaInterrompidaPorLimite = false;
 
     if (groq) {
       try {
         const completion = await groq.chat.completions.create({
           model: "openai/gpt-oss-20b",
+          max_completion_tokens: 65536,
 
           messages: [
             {
@@ -756,20 +734,38 @@ nem produza recomendações sem evidências suficientes.
           ]
         });
 
-        interpretacao =
-          completion.choices[0]?.message?.content?.trim() || "";
+        const escolha = completion.choices?.[0];
 
-        if (interpretacao) {
-          iaDisponivel = true;
-          console.log("Interpretação do Apriori gerada pela Groq.");
+        if (escolha?.finish_reason === "length") {
+          respostaInterrompidaPorLimite = true;
+          console.warn(
+            "Resposta da Groq interrompida pelo limite de tokens. Tokens gerados:",
+            completion.usage?.completion_tokens
+          );
+        } else if (escolha?.finish_reason === "stop") {
+          interpretacao = escolha.message?.content?.trim() || "";
+
+          if (interpretacao) {
+            iaDisponivel = true;
+            console.log(
+              "Interpretação do Apriori gerada pela Groq. finish_reason:",
+              escolha.finish_reason,
+              "Tokens gerados:",
+              completion.usage?.completion_tokens
+            );
+          }
+        } else {
+          console.warn(
+            "Groq não confirmou o encerramento natural da interpretação. finish_reason:",
+            escolha?.finish_reason
+          );
         }
 
       } catch (erroGroq) {
-        console.error("Groq falhou na interpretação do Apriori:", {
-          status: erroGroq.status,
-          message: erroGroq.message,
-          details: erroGroq.error?.message
-        });
+        console.error(
+          "Groq falhou na interpretação do Apriori:",
+          erroGroq.status || erroGroq.message
+        );
       }
     }
 
@@ -780,24 +776,40 @@ nem produza recomendações sem evidências suficientes.
     if (!interpretacao && genAI) {
       try {
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-flash"
+          model: "gemini-2.5-flash",
+          generationConfig: {
+            maxOutputTokens: 65536
+          }
         });
 
         const result = await model.generateContent(prompt);
+        const finishReason =
+          result.response.candidates?.[0]?.finishReason;
 
-        interpretacao = result.response.text().trim();
+        if (finishReason === "MAX_TOKENS") {
+          respostaInterrompidaPorLimite = true;
+          console.warn(
+            "Resposta do Gemini interrompida pelo limite de tokens."
+          );
+        } else if (finishReason === "STOP") {
+          interpretacao = result.response.text().trim();
 
-        if (interpretacao) {
-          iaDisponivel = true;
-          console.log("Interpretação do Apriori gerada pelo Gemini.");
+          if (interpretacao) {
+            iaDisponivel = true;
+            console.log("Interpretação do Apriori gerada pelo Gemini.");
+          }
+        } else {
+          console.warn(
+            "Gemini não confirmou o encerramento natural da interpretação. finishReason:",
+            finishReason
+          );
         }
 
       } catch (erroGemini) {
-        console.error("Gemini falhou na interpretação do Apriori:", {
-          status: erroGemini.status,
-          message: erroGemini.message,
-          details: erroGemini.error?.message
-        });
+        console.error(
+          "Gemini falhou na interpretação do Apriori:",
+          erroGemini.status || erroGemini.message
+        );
       }
     }
 
@@ -806,10 +818,13 @@ nem produza recomendações sem evidências suficientes.
     // =========================================
 
     if (!interpretacao) {
-      interpretacao =
-        "A análise matemática do Apriori foi realizada com sucesso, " +
-        "mas os serviços de IA generativa estão temporariamente indisponíveis. " +
-        "Os resultados calculados continuam disponíveis.";
+      interpretacao = respostaInterrompidaPorLimite
+        ? "A análise matemática do Apriori foi realizada com sucesso, " +
+          "mas a interpretação da IA foi interrompida pelo limite de tokens. " +
+          "O conteúdo parcial foi descartado; os resultados calculados continuam disponíveis."
+        : "A análise matemática do Apriori foi realizada com sucesso, " +
+          "mas os serviços de IA generativa estão temporariamente indisponíveis. " +
+          "Os resultados calculados continuam disponíveis.";
     }
 
     // =========================================
